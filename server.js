@@ -1,4 +1,5 @@
 const express = require('express')
+const https = require('https')
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose')
 const path = require('path')
@@ -103,6 +104,44 @@ app.post('/register_handler', urlencodedParser, function (req, res) {
                         alert(err)
                         return console.log("\n\n this is the error \n\n" + err);
                     }
+                    // 调用 web API 发送欢迎邮件
+                    const first_name = req.body.first_name
+                    const last_name = req.body.last_name
+                    const email = req.body.email
+                    const data = {
+                        members:[{
+                            email_address:email,
+                            status: "subscribed",
+                            merge_fields:{
+                                FNAME:first_name,
+                                LNAME:last_name
+                            }
+                        }]
+                    }
+                    let jsonData = JSON.stringify(data)
+                
+                    const apiKey = "817c5383f38a94228303f5029c828584-us17" 
+                    const list_id = "797d0cb446"
+                    const url = "https://us17.api.mailchimp.com/3.0/lists/797d0cb446"
+                    const options={
+                        method:"POST",
+                        auth:"david:817c5383f38a94228303f5029c828584-us17"
+                    }
+                
+                    const request = https.request(url, options, (res)=>{
+                        res.on("data",(data)=>{
+                            let jsData = JSON.parse(data)
+                            if (jsData.error_count==0){
+                                console.log("send welcome email successfully")
+                            }else{
+                                console.log("error:"+jsData.errors[0].error)
+                            }
+                        })
+                    })
+    
+                    request.write(jsonData)
+                    request.end()
+
                     alert("Registered Successfully");
                     res.redirect('/');
                     return console.log("Registered Successfully");
@@ -117,7 +156,7 @@ app.post('/register_handler', urlencodedParser, function (req, res) {
 
 app.post('/sign_in_handler', urlencodedParser, function (req,res) {
     let temp_sign_in_user = req.body
-    
+    //数据库查询输入邮箱值
     Requester.findOne({
         'email':temp_sign_in_user.email,
     },
