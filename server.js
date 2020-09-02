@@ -5,74 +5,21 @@ const mongoose = require('mongoose')
 const path = require('path')
 const alert = require('alert')
 const bcrypt = require('bcrypt')
+const Requester = require('./models/Requester')
+const Worker = require('./models/Worker')
 const saltRounds = 10;
 const app = express()
-const urlencodedParser = bodyParser.urlencoded({ extended: false });
+app.use(bodyParser.urlencoded({extended:true}))
 
 const url = "mongodb://localhost:27017/iCrowd"
-mongoose.connect(url)
+mongoose.connect(url,{useNewUrlParser: true, useUnifiedTopology: true })
 var db = mongoose.connection;
 db.on('error',console.error.bind(console,'connection error'));
 db.once('open',function(){
     console.log("Successful connection to "+ url)
-});
-
-var requesterSchema = mongoose.Schema({
-    country:{
-        type:String,
-        required:[true,'Please choose country']
-    },
-    first_name:{
-        type:String,
-        required:[true,'Please enter first name']
-    },
-    last_name:{
-        type:String,
-        required:[true,'Please enter last name']
-    },
-    email:{
-        type:String,
-        unique:[true,'This email is already been registered'],
-        required:[true,'Please enter email'],
-        match:/^[a-zA-Z0-9_-]+@.*?/
-    },
-    password:{
-        type:String,
-        required:[true,'Please enter password'],
-        validate:function(arg){
-            return arg.length>=8
-        }
-
-    },
-    confirm_password:{
-        type:String,
-        required:[true,'Please enter confirm_password'],
-　　　　validate: function(arg) {
-    　　　　　　return arg === this.password;
-　　　　}
-    },
-    address:{
-        type:String,
-        required:[true,'Please enter address']
-    },
-    city:{
-        type:String,
-        required:[true,'Please enter address']
-    },
-    state_province_region:{
-        type:String,
-        required:[true,'Please enter state province and region']
-    },
-    zip:{
-        type:String
-    },
-    phone_number:{
-        type:Number
-    },
 })
-var Requester = mongoose.model('Requester',requesterSchema);//将schema编译为model构造函数
 
-// get 请求
+// Requester API Route
 app.get('/register', (req, res)=>{
     res.sendFile(path.join(__dirname, "public/register.html"));
 })
@@ -83,9 +30,7 @@ app.get('/req_task', (req,res)=>{
     res.sendFile(path.join(__dirname,"public/req_task.html"))
 })
 
-
-//  POST 请求
-app.post('/register_handler', urlencodedParser, function (req, res) {
+app.post('/register_handler', function (req, res) {
     let temp_requester = req.body
     // 存入前加密
     bcrypt.genSalt(saltRounds, function(err, salt) {
@@ -154,7 +99,7 @@ app.post('/register_handler', urlencodedParser, function (req, res) {
     
 })
 
-app.post('/sign_in_handler', urlencodedParser, function (req,res) {
+app.post('/sign_in_handler', function (req,res) {
     let temp_sign_in_user = req.body
     //数据库查询输入邮箱值
     Requester.findOne({
@@ -176,6 +121,79 @@ app.post('/sign_in_handler', urlencodedParser, function (req,res) {
                 res.send("No such email")
             }
     })
+})
+
+//Worker API Route
+app.route('/workers')
+.get((req,res)=>{
+    Worker.find((err,workerList)=>{
+        if(err) res.send(err)
+        else res.send(workerList)
+    })
+})
+.post((req,res)=>{
+    const worker = new Worker({
+        worker_name:req.body.name,
+        worker_password:req.body.password,
+        creation_date:req.body.creation_date,
+        worker_phone_number:req.body.phone_number,
+        worker_address:req.body.address
+    })
+    worker.save((err)=>{
+        if (err) res.send("Error occurred: "+ err)
+        else res.send('Successfully added a new worker!')
+    })
+})
+.delete((req,res)=>{
+    Worker.deleteMany((err)=>{
+        if(err) res.send("Error occurred: " + err)
+        else res.send('Successfully delete all worker!')
+    })
+})
+
+app.route('/workers/:w_name')
+.get((req,res)=>{
+    console.log(req.params)
+    Worker.findOne({worker_name: req.params.w_name},(err,foundWorker)=>{
+        if (!err) {
+            res.send(foundWorker)
+        }
+        else res.send("No Match Worker Found")
+    })
+})
+.put((req,res)=>{
+    Worker.update(
+        {worker_name:req.params.w_name},
+        {
+            worker_name:req.body.name,
+            worker_password:req.body.password,
+            creation_date:req.body.creation_date,
+            worker_phone_number:req.body.phone_number,
+            worker_address:req.body.address
+        },
+        {overwrite:true},
+        (err)=>{
+            if(err) res.send(err)
+            else res.send('Successfully updated!')
+        }
+    )
+})
+.patch((req,res)=>{
+    console.log(req.params)
+    Worker.update(
+        {worker_name:req.params.w_name},
+        {
+            worker_name:req.body.name,
+            worker_password:req.body.password,
+            creation_date:req.body.creation_date,
+            worker_phone_number:req.body.phone_number,
+            worker_address:req.body.address
+        },
+        (err)=>{
+            if (!err) res.send('Successfully updated')
+            else res.send(err)
+        }
+    )
 })
 
 // 监听端口
