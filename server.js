@@ -1,15 +1,32 @@
 const express = require('express')
 const https = require('https')
-const bodyParser = require('body-parser');
+const bodyParser = require('body-parser')
 const mongoose = require('mongoose')
 const path = require('path')
 const alert = require('alert')
 const bcrypt = require('bcrypt')
+// Packages for 6.3D
+const passport = require('passport')
+const session = require('express-session')
+const cookieSession = require("cookie-session")
+var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
+// require('https').globalAgent.options.rejectUnauthorized = false
+//
 const Requester = require('./models/Requester')
 const Worker = require('./models/Worker')
+const Requester_google = require('./models/Requester_google')
+const keys = require("./config/keys")
+const { ClientRequest } = require('http')
 const saltRounds = 10;
 const app = express()
 app.use(bodyParser.urlencoded({extended:true}))
+app.use(express.static("public"))
+app.use(cookieSession({
+    maxAge: 24*60*60*1000,//One Day
+    keys:[keys.session.cookieKey]
+}))
+app.use(passport.initialize())
+app.use(passport.session())
 
 const url = "mongodb://localhost:27017/iCrowd"
 mongoose.connect(url,{useNewUrlParser: true, useUnifiedTopology: true })
@@ -19,12 +36,62 @@ db.once('open',function(){
     console.log("Successful connection to "+ url)
 })
 
+//passport Google 登录策略
+passport.use(
+    new GoogleStrategy(
+        {
+            clientID: keys.google.clientID,
+            clientSecret: keys.google.clientSecret,
+            callbackURL: "/google_sign_in/redirect",
+            proxy: true
+        },
+        (accessToken, refreshToken, profile, done)=>{
+            Requester_google.findOne({ googleId: profile.id }, (err, currentRequester)=>{
+                if(currentRequester){
+                    //如果已有登陆账户
+                    done(null, currentRequester);
+                    console.log(' >> This account is existed' );
+                  } else{
+                        console.log(' >> We will create a new account' );
+                        //如果没有，在数据库新建
+                        new Requester_google({
+                        googleId: profile.id,
+                        }).save().then((newRequesterGoogle) =>{
+                        done(null, newRequesterGoogle);
+                    });
+                   } 
+            })
+        }
+    )
+  );
+passport.serializeUser((requester_google, done) => {
+    done(null, requester_google.id)//这里的id是mongo生成的id，而非google ID
+})
+passport.deserializeUser((id,done)=>{
+    Requester_google.findById(id).then(requester_google =>{
+        done(null,requester_google)
+    })
+})
+
+//Google Sign In Route
+app.get("/google_sign_in", passport.authenticate("google", {
+    scope: ["profile", "email"]
+}))
+app.get("/google_logout", (res,req)=>{
+    req.logout()
+    res.send(req.user)
+})
+app.get("/google_sign_in/redirect",passport.authenticate('google'),(res,req)=>{
+    res.redirect('/req_task')
+})
+
+
 // Requester API Route
 app.get('/register', (req, res)=>{
-    res.sendFile(path.join(__dirname, "public/register.html"));
+    res.sendFile(path.join(__dirname, "public/register.html"))
 })
 app.get('/', (req, res)=>{
-    res.sendFile(path.join(__dirname, "public/index.html"));
+    res.sendFile(path.join(__dirname, "public/index.html"))
 })
 app.get('/req_task', (req,res)=>{
     res.sendFile(path.join(__dirname,"public/req_task.html"))

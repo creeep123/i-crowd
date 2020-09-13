@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const passportLocalMongoose = require('passport-local-mongoose')
 const workerSchema = new mongoose.Schema(
     {
         worker_name:{
@@ -24,5 +25,6 @@ const workerSchema = new mongoose.Schema(
         }
     }
 )
+workerSchema.plugin(passportLocalMongoose)
 
 module.exports = mongoose.model("Worker",workerSchema)
