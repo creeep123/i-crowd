@@ -1,15 +1,22 @@
 {
   "dependencies": {
     "alert": "^5.0.4",
+    "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
     "cookie-session": "^1.4.0",
     "express": "^4.17.1",
-    "mongoose": "^5.10.0"
+    "express-session": "^1.17.1",
+    "mongoose": "^5.10.0",
+    "passport": "^0.4.1",
+    "passport-google-oauth": "^2.0.0"
   },
   "scripts": {
     "start": "node server.js",
     "watch:html": "watch 'npm run build:html' public/html",
-    "watch:css": "watch 'npm run build:css' public/style"
+    "watch:css": "watch 'npm run build:css' public/style",
+    "heroku-prebuild": "echo This runs before Heroku installs dependencies.",
+    "heroku-postbuild": "echo This runs after Heroku installs dependencies, but before Heroku prunes and caches dependencies.",
+    "heroku-cleanup": "echo This runs after Heroku prunes and caches dependencies."
   },
   "name": "icrowd",
   "version": "1.0.0",
@@ -18,5 +25,7 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "engines":{"node":"12.x"}
+  "engines": {
+    "node": "12.x"
+  }
 }
