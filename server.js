@@ -115,7 +115,8 @@ app.post('/register_handler', function (req, res) {
                 let newRequester = new Requester(temp_requester)// Mongoose 会自动找到名称是 model 名字复数形式的 collection
                 newRequester.save((err)=>{
                     if(err) {
-                        alert(err)
+                        // alert(err) 弹窗警告
+                        res.send(err)
                         return console.log("\n\n this is the error \n\n" + err);
                     }
                     // 调用 web API 发送欢迎邮件
@@ -134,13 +135,10 @@ app.post('/register_handler', function (req, res) {
                     }
                     let jsonData = JSON.stringify(data)
                 
-                    const apiKey = "817c5383f38a94228303f5029c828584-us17" 
-                    const list_id = "797d0cb446"
-                    const url = "https://us17.api.mailchimp.com/3.0/lists/797d0cb446"
-                    const options={
-                        method:"POST",
-                        auth:"david:817c5383f38a94228303f5029c828584-us17"
-                    }
+                    const apiKey = keys.mailchimp.apiKey 
+                    const list_id = keys.mailchimp.list_id
+                    const url = keys.mailchimp.url
+                    const options= keys.mailchimp.options
                 
                     const request = https.request(url, options, (res)=>{
                         res.on("data",(data)=>{
@@ -148,7 +146,7 @@ app.post('/register_handler', function (req, res) {
                             if (jsData.error_count==0){
                                 console.log("send welcome email successfully")
                             }else{
-                                console.log("error:"+jsData.errors[0].error)
+                                console.log("error related to welcome email")//+jsData.errors[0].error
                             }
                         })
                     })
@@ -156,9 +154,9 @@ app.post('/register_handler', function (req, res) {
                     request.write(jsonData)
                     request.end()
 
-                    alert("Registered Successfully");
-                    res.redirect('/');
-                    return console.log("Registered Successfully");
+                    // alert("Registered Successfully")
+                    res.redirect('/')
+                    return console.log("Registered Successfully")
                 })
                 return console.log("Hash confirm_password successfully")
             })
