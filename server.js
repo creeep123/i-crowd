@@ -28,7 +28,9 @@ app.use(cookieSession({
 app.use(passport.initialize())
 app.use(passport.session())
 
-const url = "mongodb://localhost:27017/iCrowd"
+
+// const url = "mongodb://localhost:27017/iCrowd"
+const url = "mongodb+srv://mayum:Mym..980919@icrowd.scmrq.mongodb.net/iCrowd?retryWrites=true&w=majority"
 mongoose.connect(url,{useNewUrlParser: true, useUnifiedTopology: true })
 var db = mongoose.connection;
 db.on('error',console.error.bind(console,'connection error'));
@@ -264,6 +266,10 @@ app.route('/workers/:w_name')
 })
 
 // 监听端口
-var server = app.listen(8081, function () {
-    console.log("server is running on http://127.0.0.1:8081")
+let port = process.env.PORT;
+if (port == null || port == "") {
+  port = 8081;
+}
+var server = app.listen(port, function () {
+    console.log("server is running on http://127.0.0.1:"+port)
 })

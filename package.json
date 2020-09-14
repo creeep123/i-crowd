@@ -17,5 +17,6 @@
   "devDependencies": {},
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "engines":{"node":"12.x"}
 }
