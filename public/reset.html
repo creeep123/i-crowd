@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reset Password</title>
+    <link href="./main.css" rel="stylesheet" />
+    <!-- Bootstrap -->
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap-reboot.min.css"
+        rel="stylesheet">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" rel="stylesheet"> -->
+</head>
+
+<body>
+    <div class="container">
+        <aside class="col-6">
+            <h4 class="card-title mb-4 mt-3">iCrowdTask Reset your password</h4>
+            <div class="card">
+                <article class="card-body">
+                    <form action="/reset/:name" method="POST" role="form">
+                        <div class="form-group">
+                            <label for="email">Email*</label>
+                            <input type="text" name="email" class="form-control" id="email" placeholder="" readonly="readonly"/>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password*</label>
+                            <input type="text" name="password" class="form-control" id="password" placeholder="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm password*</label>
+                            <input type="text" name="confirm_password" class="form-control" id="confirm-password"
+                                placeholder="" />
+                        </div>
+                        <button type="submit" class="btn  btn-primary btn-block">Submit</button>
+                    </form>
+                </article>
+            </div>
+            <!--End Card-->
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+    <script>
+        pathName = window.location.pathname
+        let re = /\/reset\/(.*)/
+        let thisEmail =  re.exec(pathName)[1]
+        document.querySelector("input[name='email']").setAttribute("value",`${thisEmail}`)
+    </script>
+</body>
