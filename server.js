@@ -116,46 +116,46 @@ app.post('/register_handler', async function (req, res) {
             if (err) {
                 // alert(err) 弹窗警告
                 res.send(err)
-                return console.log("\n\n this is the error \n\n" + err);
-            }
-            // 调用 web API 发送欢迎邮件
-            const first_name = req.body.first_name
-            const last_name = req.body.last_name
-            const email = req.body.email
-            const data = {
-                members: [{
-                    email_address: email,
-                    status: "subscribed",
-                    merge_fields: {
-                        FNAME: first_name,
-                        LNAME: last_name
-                    }
-                }]
-            }
-            let jsonData = JSON.stringify(data)
+                console.log("\n\n this is the error \n\n" + err);
+            } else {
+                // 调用 web API 发送欢迎邮件
+                const first_name = req.body.first_name
+                const last_name = req.body.last_name
+                const email = req.body.email
+                const data = {
+                    members: [{
+                        email_address: email,
+                        status: "subscribed",
+                        merge_fields: {
+                            FNAME: first_name,
+                            LNAME: last_name
+                        }
+                    }]
+                }
+                let jsonData = JSON.stringify(data)
 
-            const apiKey = keys.mailchimp.apiKey
-            const list_id = keys.mailchimp.list_id
-            const url = keys.mailchimp.url
-            const options = keys.mailchimp.options
+                const apiKey = keys.mailchimp.apiKey
+                const list_id = keys.mailchimp.list_id
+                const url = keys.mailchimp.url
+                const options = keys.mailchimp.options
 
-            const request = https.request(url, options, (res) => {
-                res.on("data", (data) => {
-                    let jsData = JSON.parse(data)
-                    if (jsData.error_count == 0) {
-                        console.log("send welcome email successfully")
-                    } else {
-                        console.log("error related to welcome email")//+jsData.errors[0].error
-                    }
+                const request = https.request(url, options, (res) => {
+                    res.on("data", (data) => {
+                        let jsData = JSON.parse(data)
+                        if (jsData.error_count == 0) {
+                            console.log("send welcome email successfully")
+                        } else {
+                            console.log("error related to welcome email")//+jsData.errors[0].error
+                        }
+                    })
                 })
-            })
+                request.write(jsonData)
+                request.end()
 
-            request.write(jsonData)
-            request.end()
-
-            // alert("Registered Successfully")
-            res.redirect('/')
-            return console.log("Registered Successfully")
+                console.log("Registered Successfully")
+                // alert("Registered Successfully")
+                res.redirect('/')
+            }
         })
     } else {
         res.send("Password and Confirm-Password are different!")
@@ -269,7 +269,7 @@ app.post('/forgot_handler', async (req, res) => {
     if (email) {
         // let url = "http://127.0.0.1:8081/reset/" + email
         let url = "https://icrowd-platform.herokuapp.com/" + email
-        sc.send(email, 'iCrowd Password Reset', '<h1><a href="'+url+'">Click here to reset your password</a></h1>').then((info) => {
+        sc.send(email, 'iCrowd Password Reset', '<h1><a href="' + url + '">Click here to reset your password</a></h1>').then((info) => {
             if (info.message == 'success') {
                 console.log('url :>> ', url)
                 console.log('info :>> ', info)
@@ -319,7 +319,7 @@ app.post('/reset/:email', async (req, res) => {
 // 监听端口
 let port = process.env.PORT;
 if (port == null || port == "") {
-    port = 8081;
+    port = 5000;
 }
 var server = app.listen(port, function () {
     console.log("server is running on http://127.0.0.1:" + port)
