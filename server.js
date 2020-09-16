@@ -84,11 +84,11 @@ passport.deserializeUser((id, done) => {
 app.get("/google_sign_in", passport.authenticate("google", {
     scope: ["profile", "email"]
 }))
-app.get("/google_logout", (res, req) => {
+app.get("/google_logout", (req, res) => {
     req.logout()
     res.send(req.user)
 })
-app.get("/google_sign_in/redirect", passport.authenticate('google'), (res, req) => {
+app.get("/google_sign_in/redirect", passport.authenticate('google'), (req, res) => {
     res.redirect('/req_task')
 })
 
@@ -103,7 +103,6 @@ app.get('/', (req, res) => {
 app.get('/req_task', (req, res) => {
     res.sendFile(path.join(__dirname, "public/req_task.html"))
 })
-
 app.post('/register_handler', async function (req, res) {
     let temp_requester = req.body
     let salt = await bcrypt.genSalt(saltRounds)
@@ -162,7 +161,6 @@ app.post('/register_handler', async function (req, res) {
         res.send("Password and Confirm-Password are different!")
     }
 })
-
 app.post('/sign_in_handler', function (req, res) {
     let temp_sign_in_user = req.body
     //数据库查询输入邮箱值
@@ -265,12 +263,12 @@ app.get('/forgot', (req, res) => {
     res.sendFile(path.join(__dirname, "public/forgot.html"))
 })
 app.post('/forgot_handler', async (req, res) => {
-
     let email = req.body.email
     console.log('email :>> ', email)
     //sendCloud
     if (email) {
-        let url = "http://127.0.0.1:8081/reset/" + email
+        // let url = "http://127.0.0.1:8081/reset/" + email
+        let url = "https://icrowd-platform.herokuapp.com/" + email
         sc.send(email, 'iCrowd Password Reset', '<h1><a href="'+url+'">Click here to reset your password</a></h1>').then((info) => {
             if (info.message == 'success') {
                 console.log('url :>> ', url)
@@ -280,18 +278,6 @@ app.post('/forgot_handler', async (req, res) => {
                 res.send(info)
             }
         })
-        // const DOMAIN = "sandbox5e21662d2aae4d3b93d86e0e2e15deff.mailgun.org";
-        // const mg = mailgun({ apiKey: "3aec44308c922790d567d9e1cce1e526-d5e69b0b-a5c7f23c", domain: DOMAIN });
-        // const data = {
-        //     from: "Mailgun Sandbox <postmaster@sandbox5e21662d2aae4d3b93d86e0e2e15deff.mailgun.org>",
-        //     to: `${email}`,
-        //     subject: "Hello",
-        //     text: `<h1><a href="${url}">Click here to reset your password</a></h1>`
-        // }
-        // mg.messages().send(data, function (error, body) {
-        //     console.log(body);
-        // })
-        // res.redirect('/')
     } else {
         res.send("please enter your email!")
     }
