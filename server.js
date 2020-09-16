@@ -6,7 +6,8 @@ const path = require('path')
 // const alert = require('alert')
 const bcrypt = require('bcrypt')
 // Packages for 6.3D
-const mailgun = require("mailgun-js");
+const URL = require('url')
+const mailgun = require("mailgun-js")
 const SendCloud = require('sendcloud')
 const passport = require('passport')
 const session = require('express-session')
@@ -94,11 +95,11 @@ app.get("/google_sign_in/redirect", passport.authenticate('google'), (req, res) 
 
 
 // Requester API Route
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, "public/register.html"))
-})
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, "public/index.html"))
+})
+app.get('/register', (req, res) => {
+    res.sendFile(path.join(__dirname, "public/register.html"))
 })
 app.get('/req_task', (req, res) => {
     res.sendFile(path.join(__dirname, "public/req_task.html"))
@@ -264,11 +265,14 @@ app.get('/forgot', (req, res) => {
 })
 app.post('/forgot_handler', async (req, res) => {
     let email = req.body.email
-    console.log('email :>> ', email)
+    let prefix = req.headers.referer
+    prefix = prefix.replace(/forgot/, '')
     //sendCloud
     if (email) {
         // let url = "http://127.0.0.1:8081/reset/" + email
-        let url = "https://icrowd-platform.herokuapp.com/" + email
+        // let url = "https://icrowd-platform.herokuapp.com/reset/" + email
+        let url = `${prefix}reset/${email}`
+        console.log('url :>> ', url)
         sc.send(email, 'iCrowd Password Reset', '<h1><a href="' + url + '">Click here to reset your password</a></h1>').then((info) => {
             if (info.message == 'success') {
                 console.log('url :>> ', url)
