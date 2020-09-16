@@ -6,8 +6,8 @@ const path = require('path')
 // const alert = require('alert')
 const bcrypt = require('bcrypt')
 // Packages for 6.3D
+const mailgun = require("mailgun-js");
 const SendCloud = require('sendcloud')
-const request = require('request')
 const passport = require('passport')
 const session = require('express-session')
 const cookieSession = require("cookie-session")
@@ -30,7 +30,7 @@ app.use(cookieSession({
 app.use(passport.initialize())
 app.use(passport.session())
 
-//初始化 sendCloud
+//初始化 sendCloud 和 mailchimp
 var sc = new SendCloud(keys.sendCloud.apiUser, keys.sendCloud.apiKey, 'DavidYangPersonal@outlook.com', 'iCrowd Tech')
 
 //数据库连接部分
@@ -161,70 +161,6 @@ app.post('/register_handler', async function (req, res) {
     } else {
         res.send("Password and Confirm-Password are different!")
     }
-
-    // 存入前加密
-    // bcrypt.genSalt(saltRounds, function (err, salt) {
-    //     //加密 密码
-    //     bcrypt.hash(temp_requester.password, salt, function (err, hash) {
-    //         if (err) return console.log('Hash password err')
-    //         temp_requester.password = hash
-    //         //加密 确认密码
-    //         bcrypt.hash(temp_requester.confirm_password, salt, function (err, hash) {
-    //             if (err) return console.log('Hash confirm_password err')
-    //             temp_requester.confirm_password = hash
-    //             //存入数据库
-    //             let newRequester = new Requester(temp_requester)// Mongoose 会自动找到名称是 model 名字复数形式的 collection
-    //             newRequester.save((err) => {
-    //                 if (err) {
-    //                     // alert(err) 弹窗警告
-    //                     res.send(err)
-    //                     return console.log("\n\n this is the error \n\n" + err);
-    //                 }
-    //                 // 调用 web API 发送欢迎邮件
-    //                 const first_name = req.body.first_name
-    //                 const last_name = req.body.last_name
-    //                 const email = req.body.email
-    //                 const data = {
-    //                     members: [{
-    //                         email_address: email,
-    //                         status: "subscribed",
-    //                         merge_fields: {
-    //                             FNAME: first_name,
-    //                             LNAME: last_name
-    //                         }
-    //                     }]
-    //                 }
-    //                 let jsonData = JSON.stringify(data)
-
-    //                 const apiKey = keys.mailchimp.apiKey
-    //                 const list_id = keys.mailchimp.list_id
-    //                 const url = keys.mailchimp.url
-    //                 const options = keys.mailchimp.options
-
-    //                 const request = https.request(url, options, (res) => {
-    //                     res.on("data", (data) => {
-    //                         let jsData = JSON.parse(data)
-    //                         if (jsData.error_count == 0) {
-    //                             console.log("send welcome email successfully")
-    //                         } else {
-    //                             console.log("error related to welcome email")//+jsData.errors[0].error
-    //                         }
-    //                     })
-    //                 })
-
-    //                 request.write(jsonData)
-    //                 request.end()
-
-    //                 // alert("Registered Successfully")
-    //                 res.redirect('/')
-    //                 return console.log("Registered Successfully")
-    //             })
-    //             return console.log("Hash confirm_password successfully")
-    //         })
-    //         return console.log("Hash password successfully")
-    //     })
-    // })
-
 })
 
 app.post('/sign_in_handler', function (req, res) {
@@ -324,44 +260,56 @@ app.route('/workers/:w_name')
         )
     })
 
-// forgot Route
+// Forgot Route
 app.get('/forgot', (req, res) => {
     res.sendFile(path.join(__dirname, "public/forgot.html"))
 })
-app.post('/forgot_handler', (req, res) => {
+app.post('/forgot_handler', async (req, res) => {
+
     let email = req.body.email
-    if(email){
+    console.log('email :>> ', email)
+    //sendCloud
+    if (email) {
         let url = "http://127.0.0.1:8081/reset/" + email
-        // sc.send(email, 'iCrowd Password Reset', '<h1><a href="'+url+'">Click here to reset your password</a></h1>').then((info) => {
-        //     if (info.message == 'success') {
-        //         res.redirect('/')
-        //     } else {
-        //         res.send(info)
-        //     }
+        sc.send(email, 'iCrowd Password Reset', '<h1><a href="'+url+'">Click here to reset your password</a></h1>').then((info) => {
+            if (info.message == 'success') {
+                console.log('url :>> ', url)
+                console.log('info :>> ', info)
+                res.redirect('/')
+            } else {
+                res.send(info)
+            }
+        })
+        // const DOMAIN = "sandbox5e21662d2aae4d3b93d86e0e2e15deff.mailgun.org";
+        // const mg = mailgun({ apiKey: "3aec44308c922790d567d9e1cce1e526-d5e69b0b-a5c7f23c", domain: DOMAIN });
+        // const data = {
+        //     from: "Mailgun Sandbox <postmaster@sandbox5e21662d2aae4d3b93d86e0e2e15deff.mailgun.org>",
+        //     to: `${email}`,
+        //     subject: "Hello",
+        //     text: `<h1><a href="${url}">Click here to reset your password</a></h1>`
+        // }
+        // mg.messages().send(data, function (error, body) {
+        //     console.log(body);
         // })
-        console.log(url)
-        res.redirect('/')
-    }else{
+        // res.redirect('/')
+    } else {
         res.send("please enter your email!")
     }
 
 })
+
+//Reset Route
 app.get('/reset/:email', (req, res) => {
     res.sendFile(path.join(__dirname, "public/reset.html"))
 })
 app.post('/reset/:email', async (req, res) => {
-    let salt = hash = confirm_hash = ""
-    salt = await bcrypt.genSalt(saltRounds)
-    hash = await bcrypt.hash(req.body.password, salt)//加密 密码
-    confirm_hash = await bcrypt.hash(req.body.confirm_password, salt)//加密 确认密码
-
-    // let salt = await bcrypt.genSalt(saltRounds)
-    // let hash = await bcrypt.hash(req.body.password, salt)//加密 密码
-    // let confirm_hash = await bcrypt.hash(req.body.confirm_password, salt)//加密 确认密码
+    let salt = await bcrypt.genSalt(saltRounds)
+    let hash = await bcrypt.hash(req.body.password, salt)//加密 密码
+    let confirm_hash = await bcrypt.hash(req.body.confirm_password, salt)//加密 确认密码
     console.log('req.body.email :>> ', req.body);
     if (hash == confirm_hash) {
         Requester.updateOne(
-            { email: req.body.email},
+            { email: req.body.email },
             {
                 password: hash,
                 confirm_password: confirm_hash
@@ -377,7 +325,7 @@ app.post('/reset/:email', async (req, res) => {
                 }
             }
         )
-    }else{
+    } else {
         res.send("Password and Confirm-Password are different!")
     }
 })
