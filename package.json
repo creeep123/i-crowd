@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@mailchimp/mailchimp_transactional": "^1.0.15",
     "alert": "^5.0.4",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",

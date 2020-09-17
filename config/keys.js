@@ -7,12 +7,12 @@ module.exports = {
     cookieKey: "thisIsMyRandomCookie"
   },
   mailchimp: {
-    apiKey:"d8c8b2b5d0f64431607489108a70f79e-us17",
+    apiKey:"817c5383f38a94228303f5029c828584-us17",
     url: "https://us17.api.mailchimp.com/3.0/lists/797d0cb446",
     list_id:"",
     options: {
       method: "POST",
-      auth: "david:d8c8b2b5d0f64431607489108a70f79e-us17"
+      auth: "david:817c5383f38a94228303f5029c828584-us17"
     }
   },
   sendCloud:{

@@ -3,7 +3,6 @@ const https = require('https')
 const bodyParser = require('body-parser')
 const mongoose = require('mongoose')
 const path = require('path')
-// const alert = require('alert')
 const bcrypt = require('bcrypt')
 // Packages for 6.3D
 const URL = require('url')
@@ -31,12 +30,13 @@ app.use(cookieSession({
 app.use(passport.initialize())
 app.use(passport.session())
 
-//初始化 sendCloud 和 mailchimp
+//初始化 sendCloud
 var sc = new SendCloud(keys.sendCloud.apiUser, keys.sendCloud.apiKey, 'DavidYangPersonal@outlook.com', 'iCrowd Tech')
 
 //数据库连接部分
 // const url = "mongodb://localhost:27017/iCrowd"
 const url = "mongodb+srv://mayum:Mym..980919@icrowd.scmrq.mongodb.net/iCrowd?retryWrites=true&w=majority"
+mongoose.set('useCreateIndex', true)
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error'));
@@ -104,57 +104,50 @@ app.get('/register', (req, res) => {
 app.get('/req_task', (req, res) => {
     res.sendFile(path.join(__dirname, "public/req_task.html"))
 })
-app.post('/register_handler', async function (req, res) {
+app.post('/register_handler', async (req, res) => {
+    let hash, confirm_hash, salt
     let temp_requester = req.body
-    let salt = await bcrypt.genSalt(saltRounds)
-    let hash = await bcrypt.hash(temp_requester.password, salt)//加密 密码
-    let confirm_hash = await bcrypt.hash(temp_requester.confirm_password, salt)//加密 确认密码
-    temp_requester.password = hash
-    temp_requester.confirm_password = confirm_hash
+    try {
+        async function enc() {
+            salt = await bcrypt.genSalt(saltRounds)
+            hash = await bcrypt.hash(temp_requester.password, salt)//加密 密码
+            confirm_hash = await bcrypt.hash(temp_requester.confirm_password, salt)//加密 确认密码
+        }
+        enc()
+    } catch (err) {
+        console.log(err);
+    }
     if (hash == confirm_hash) {//当确认密码和密码相同时
         let newRequester = new Requester(temp_requester)// Mongoose 会自动找到名称是 model 名字复数形式的 collection
         newRequester.save((err) => {
-            if (err) {
-                // alert(err) 弹窗警告
+            if (err) {// send 错误信息
                 res.send(err)
                 console.log("\n\n this is the error \n\n" + err);
-            } else {
-                // 调用 web API 发送欢迎邮件
-                const first_name = req.body.first_name
-                const last_name = req.body.last_name
-                const email = req.body.email
-                const data = {
+            } else {// 调用 web API 发送欢迎邮件                
+                let data = {
                     members: [{
-                        email_address: email,
+                        email_address: req.body.email,
                         status: "subscribed",
                         merge_fields: {
-                            FNAME: first_name,
-                            LNAME: last_name
+                            // FNAME and LNAME are named on the mailchimp website
+                            FNAME: req.body.first_name,
+                            LNAME: req.body.last_name
                         }
                     }]
                 }
                 let jsonData = JSON.stringify(data)
-
-                const apiKey = keys.mailchimp.apiKey
-                const list_id = keys.mailchimp.list_id
+                // const apiKey = keys.mailchimp.apiKey
+                // const list_id = keys.mailchimp.list_id
                 const url = keys.mailchimp.url
                 const options = keys.mailchimp.options
-
-                const request = https.request(url, options, (res) => {
-                    res.on("data", (data) => {
-                        let jsData = JSON.parse(data)
-                        if (jsData.error_count == 0) {
-                            console.log("send welcome email successfully")
-                        } else {
-                            console.log("error related to welcome email")//+jsData.errors[0].error
-                        }
-                    })
-                })
-                request.write(jsonData)
-                request.end()
-
-                console.log("Registered Successfully")
-                // alert("Registered Successfully")
+                // const request = https.request(url, options, (res) => {
+                //     res.on("data", (data) => {
+                //         console.log(JSON.parse(data))
+                //     })
+                // })
+                // request.write(jsonData)
+                // request.end()
+                console.log('Sent welcome email successfully')
                 res.redirect('/')
             }
         })
@@ -162,7 +155,7 @@ app.post('/register_handler', async function (req, res) {
         res.send("Password and Confirm-Password are different!")
     }
 })
-app.post('/sign_in_handler', function (req, res) {
+app.post('/sign_in_handler', (req, res) => {
     let temp_sign_in_user = req.body
     //数据库查询输入邮箱值
     Requester.findOne({
@@ -263,7 +256,7 @@ app.route('/workers/:w_name')
 app.get('/forgot', (req, res) => {
     res.sendFile(path.join(__dirname, "public/forgot.html"))
 })
-app.post('/forgot_handler', async (req, res) => {
+app.post('/forgot_handler', (req, res) => {
     let email = req.body.email
     let prefix = req.headers.referer
     prefix = prefix.replace(/forgot/, '')
@@ -293,9 +286,14 @@ app.get('/reset/:email', (req, res) => {
     res.sendFile(path.join(__dirname, "public/reset.html"))
 })
 app.post('/reset/:email', async (req, res) => {
-    let salt = await bcrypt.genSalt(saltRounds)
-    let hash = await bcrypt.hash(req.body.password, salt)//加密 密码
-    let confirm_hash = await bcrypt.hash(req.body.confirm_password, salt)//加密 确认密码
+    let hash, confirm_hash, salt
+    try {
+        salt = await bcrypt.genSalt(saltRounds)
+        hash = await bcrypt.hash(req.body.password, salt)//加密 密码
+        confirm_hash = await bcrypt.hash(req.body.confirm_password, salt)//加密 确认密码
+    } catch (err) {
+        console.log(err)
+    }
     console.log('req.body.email :>> ', req.body);
     if (hash == confirm_hash) {
         Requester.updateOne(
@@ -323,7 +321,7 @@ app.post('/reset/:email', async (req, res) => {
 // 监听端口
 let port = process.env.PORT;
 if (port == null || port == "") {
-    port = 5000;
+    port = 9031;
 }
 var server = app.listen(port, function () {
     console.log("server is running on http://127.0.0.1:" + port)
