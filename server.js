@@ -1,27 +1,27 @@
 const express = require('express')
-const https = require('https')
 const bodyParser = require('body-parser')
 const mongoose = require('mongoose')
 const path = require('path')
 const bcrypt = require('bcrypt')
-// Packages for 6.3D
-const URL = require('url')
+const cors = require('cors')
 const mailgun = require("mailgun-js")
 const SendCloud = require('sendcloud')
 const passport = require('passport')
 const session = require('express-session')
 const cookieSession = require("cookie-session")
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
-// require('https').globalAgent.options.rejectUnauthorized = false
-//
+//models
 const Requester = require('./models/Requester')
 const Worker = require('./models/Worker')
 const Requester_google = require('./models/Requester_google')
+
 const keys = require("./config/keys")
 const { ClientRequest } = require('http')
 const saltRounds = 10;
 const app = express()
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(cors())
+app.use(bodyParser.json())
 app.use(express.static("public"))
 app.use(cookieSession({
     maxAge: 24 * 60 * 60 * 1000,//One Day
@@ -93,10 +93,15 @@ app.get("/google_sign_in/redirect", passport.authenticate('google'), (req, res) 
     res.redirect('/req_task')
 })
 
-
 // Requester API Route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, "public/index.html"))
+})
+app.get('/requester',(req,res)=>{
+    Requester.find((err, requesterList) => {
+        if (err) res.send(err)
+        else res.send(requesterList)
+    })
 })
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, "public/register.html"))
@@ -108,12 +113,9 @@ app.post('/register_handler', async (req, res) => {
     let hash, confirm_hash, salt
     let temp_requester = req.body
     try {
-        async function enc() {
-            salt = await bcrypt.genSalt(saltRounds)
-            hash = await bcrypt.hash(temp_requester.password, salt)//加密 密码
-            confirm_hash = await bcrypt.hash(temp_requester.confirm_password, salt)//加密 确认密码
-        }
-        enc()
+        salt = await bcrypt.genSalt(saltRounds)
+        hash = await bcrypt.hash(temp_requester.password, salt)//加密 密码
+        confirm_hash = await bcrypt.hash(temp_requester.confirm_password, salt)//加密 确认密码
     } catch (err) {
         console.log(err);
     }
@@ -124,22 +126,22 @@ app.post('/register_handler', async (req, res) => {
                 res.send(err)
                 console.log("\n\n this is the error \n\n" + err);
             } else {// 调用 web API 发送欢迎邮件                
-                let data = {
-                    members: [{
-                        email_address: req.body.email,
-                        status: "subscribed",
-                        merge_fields: {
-                            // FNAME and LNAME are named on the mailchimp website
-                            FNAME: req.body.first_name,
-                            LNAME: req.body.last_name
-                        }
-                    }]
-                }
-                let jsonData = JSON.stringify(data)
+                // let data = {
+                //     members: [{
+                //         email_address: req.body.email,
+                //         status: "subscribed",
+                //         merge_fields: {
+                //             // FNAME and LNAME are named on the mailchimp website
+                //             FNAME: req.body.first_name,
+                //             LNAME: req.body.last_name
+                //         }
+                //     }]
+                // }
+                // let jsonData = JSON.stringify(data)
                 // const apiKey = keys.mailchimp.apiKey
                 // const list_id = keys.mailchimp.list_id
-                const url = keys.mailchimp.url
-                const options = keys.mailchimp.options
+                // const url = keys.mailchimp.url
+                // const options = keys.mailchimp.options
                 // const request = https.request(url, options, (res) => {
                 //     res.on("data", (data) => {
                 //         console.log(JSON.parse(data))
@@ -321,7 +323,7 @@ app.post('/reset/:email', async (req, res) => {
 // 监听端口
 let port = process.env.PORT;
 if (port == null || port == "") {
-    port = 9031;
+    port = 8081;
 }
 var server = app.listen(port, function () {
     console.log("server is running on http://127.0.0.1:" + port)
